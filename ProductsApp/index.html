@@ -1,0 +1,196 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Dvir Library - Home</title>
+    <link rel="shortcut icon" href="http://dvirlibrary.000webhostapp.com/img/DLicon.jpg" type="image/x-icon" />
+</head>
+<body>
+    <style>
+        .center {
+            width: 70%;
+            text-align:left;
+            padding: 10px 10px;
+        }
+    </style>
+    <center>
+        <div class="center">
+            <div>
+                <h2>All Books: </h2>
+                <ul id="booksList" />
+            </div>
+            <div>
+                <h2>Search by ID</h2>
+                <input type="number" id="bookId" size="3" />
+                <input type="button" value="Search" onclick="findId();" />
+                <ul id="bookR1" />
+            </div>
+            <div>
+                <h2>Search by Name</h2>
+                <input type="text" id="bookName" size="15" />
+                <input type="button" value="Search" onclick="findName();" />
+                <div id="bookR2" />
+            </div>
+            <div>
+                <h2>Search by Availability</h2>
+                <input type="radio" onclick="avaC('0')" name="RD" value="borrowed " id="bookAva1" />borrowed <br />
+                <input type="radio" onclick="avaC('1')" name="RD" value="available " id="bookAva2" />available <br />
+                <input type="text" id="hideAva" style="display:none;color:black" size="5" />
+                <input type="button" value="Search" onclick="findAva();" />
+                <ul id="bookR3" />
+            </div>
+        </div>
+    </center>
+
+
+    <script src="https://www.gstatic.com/firebasejs/4.6.2/firebase.js"></script>
+    <script>
+        // Initialize Firebase
+        var config = {
+            apiKey: "AIzaSyBOnfeWHN0gVKaIlTyTdWg8pZp6goSTBLM",
+            authDomain: "dvirlibrary.firebaseapp.com",
+            databaseURL: "https://dvirlibrary.firebaseio.com",
+            projectId: "dvirlibrary",
+            storageBucket: "dvirlibrary.appspot.com",
+            messagingSenderId: "962211837932"
+        };
+        firebase.initializeApp(config);
+    </script>
+
+    <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.0.3.min.js"></script>
+    <script>
+        var uri2 = 'api/books';
+        var BooksList = [];
+
+        $(document).ready(function () {
+            // Send an AJAX request
+            $.getJSON(uri2 + '/GetBooks')
+                .done(function (data) {
+                    // On success, 'data' contains a list of books.
+                    $.each(data, function (key, item) {
+                        // Add a list item for the book.
+                        BooksList.push(item);
+                        $('<li>', { text: formatItem(item) }).appendTo($('#booksList'));
+                    });
+                });
+        });
+
+        function formatItem(item) {
+            //return item.Name + ': $' + item.Price;
+            return 'The book "' + item.name + '" is ' + item.availability + '.';
+        }
+
+        function findId() {
+            $('#bookR1').text('');
+            var id = $('#bookId').val();
+            $.getJSON(uri2 + '/GetBookById?id=' + id)
+                .done(function (data) {
+                    $('<li>', { text: formatItem(data) }).appendTo($('#bookR1'));
+                });
+        }
+        function findName() {
+            $('#bookR2').text('');
+            //var nameS = $('#bookName').val().replace(/\s/g, '').toUpperCase();
+            var nameS = $('#bookName').val();
+            $.getJSON(uri2 + '/GetBookByName?name=' + nameS)
+                .done(function (data) {
+                    if (data != null) {
+                        $('<li><button onclick="select(',data.id,')">', { text: formatItem(data) }).appendTo($('#bookR2'));
+                    }
+                });
+        }
+
+        function findAva() {
+            $('#bookR3').text("");
+            var avaS = $('#hideAva').val();
+            var avaS1; if (avaS == "available ") { avaS1 = true; } else { avaS1 = false; }
+            $.getJSON(uri2 + '/GetBooksByAva?ava=' + avaS1)
+                .done(function (data1) {
+                    $.each(data1, function (key1, item1) {
+                        $('<li>', { text: formatItem(item1) }).appendTo($('#bookR3'));
+                    });
+                });
+        }
+
+
+        function avaC(bool) {
+            if (bool != 0 || bool != '0') {
+                $('#hideAva').text("available ");
+                $("#hideAva").val("available ");
+            } else {
+                $('#hideAva').text("borrowed ");
+                $('#hideAva').val("borrowed ");
+            }
+        }
+
+
+        /*function find() {
+            var id = $('#bookId').val();
+            $.getJSON(uri2 + '/' + id)
+                .done(function (data) {
+                    $('#bookR1').text(formatItem(data));
+                })
+                .fail(function (jqXHR, textStatus, err) {
+                    $('#bookR1').text('Error: ' + err);
+                });
+        }
+
+        function findId() {
+            var id = $('#bookId').val() -1;
+            if (typeof BooksList[id] != 'undefined') {
+                var b = BooksList[id];
+                $('#bookR1').text(formatItem(b));
+            } else {
+                $('#bookR1').text('Error: ' + 'not found or undefined');
+            }
+        }
+        function findName() {
+            $('#bookR2').text('');
+            var nameS = $('#bookName').val().replace(/\s/g, '').toUpperCase();
+            var i = 0;
+            var theBook = 0;
+            var b;
+            var isFound = false;
+            for (i; i <= BooksList.length; i++) {
+                theBook = BooksList[i];
+                if (BooksList[i].name.replace(/\s/g, '').toUpperCase() == nameS) {
+                        b = theBook;
+                        $('#bookR2').text(formatItem(b));
+                        isFound = true;
+                }
+            }
+            if (isFound == false || $('#bookR2').text() == '') {
+                $('<li>', { text: 'Eror : not found.' }).appendTo($('#bookR2'));
+            }
+        }
+
+
+        function findAva() {
+            $('#bookR3').text("");
+            var avaS = $('#hideAva').val();
+            var i = 0;
+            var b;
+            //var theB;
+            var theBooks = [];
+            var theBook = 0;
+            for (i; i <= BooksList.length; i++) {
+                theBook = BooksList[i];
+                if (typeof theBook != 'undefined') {
+                    if (BooksList[i].availability == avaS) {
+                        b = theBook;
+                        theBooks.push(b);
+                    }
+                }
+            }
+            if (theBooks.length <= 0) {
+                $('<li>', { text: 'Eror : not found.' }).appendTo($('#bookR3'));
+            } else {
+                var g = 0;
+                for (g; g <= theBooks.length; g++) {
+                    //theB = theBooks[g];
+                    $('<li>', { text: formatItem(theBooks[g]) }).appendTo($('#bookR3'));
+                }
+            }
+        }*/
+    </script>
+</body>
+</html>
